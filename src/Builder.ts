@@ -1,5 +1,4 @@
-import type { Schema } from "effect";
-import { Data, Effect, pipe, Option } from "effect";
+import { Data, Effect, Schema, pipe, Option } from "effect";
 
 /**
  * @since 0.0.1
@@ -160,4 +159,37 @@ export const define = <A, E, R>(
         transforms,
         Effect.reduce({ ...a, ...defaults }, (acc, transform) => transform(acc))
       ),
+
+  /**
+   * Validates and builds the final object according to the schema.
+   *
+   * @since 0.0.1
+   * @category builders
+   *
+   * @example
+   * import * as Schema from "effect/Schema"
+   * import * as Effect from "effect/Effect"
+   * import * as Builder from "@effect/builder"
+   * import { pipe } from "effect/Function"
+   *
+   * const program = Effect.gen(function* (_) {
+   *   const builder = Builder.define(UserSchema)
+   *   const user = yield* pipe(
+   *     {},
+   *     builder.field("name", "John"),
+   *     builder.field("age", 30),
+   *     builder.build
+   *   )
+   *   // user is fully typed and validated
+   * })
+   */
+  build: (a: any) =>
+    pipe(
+      { ...a, ...defaults },
+      Schema.decodeUnknown(schema),
+      Effect.mapError(
+        (error) =>
+          new ValidationError({ message: "Schema validation failed: " + error })
+      )
+    ),
 });

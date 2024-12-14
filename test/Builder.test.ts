@@ -175,6 +175,93 @@ describe("define", () => {
       }));
   });
 
+  describe("build operation", () => {
+    it("builds a valid object with complete data", () =>
+      Effect.gen(function* (_) {
+        const builder = define(UserSchema);
+        const result = yield* pipe(
+          {
+            id: 1,
+            name: "John Doe",
+            age: 30,
+            email: Option.some("john@example.com"),
+            roles: ["user"],
+            address: Option.some({
+              street: "123 Main St",
+              city: "Springfield",
+              country: "USA"
+            }),
+            tags: { admin: true }
+          },
+          builder.build
+        );
+
+        expect(result).toEqual({
+          id: 1,
+          name: "John Doe",
+          age: 30,
+          email: Option.some("john@example.com"),
+          roles: ["user"],
+          address: Option.some({
+            street: "123 Main St",
+            city: "Springfield",
+            country: "USA"
+          }),
+          tags: { admin: true }
+        });
+      }));
+
+    it("fails with validation error for invalid data", () =>
+      Effect.gen(function* (_) {
+        const builder = define(UserSchema);
+        const program = pipe(
+          {
+            id: 1,
+            name: "John Doe",
+            age: -1, // Invalid: age must be positive
+            email: Option.some("john@example.com"),
+            roles: ["user"],
+            tags: { admin: true }
+          },
+          builder.build
+        );
+
+        const result = yield* Effect.either(program);
+        expect(Effect.isFailure(result)).toBe(true);
+        if (Effect.isFailure(result)) {
+          expect(result.toString()).toContain("Schema validation failed");
+        }
+      }));
+
+    it("builds with defaults", () =>
+      Effect.gen(function* (_) {
+        const defaults = {
+          roles: ["user"],
+          tags: { guest: true }
+        };
+        const builder = define(UserSchema, defaults);
+        const result = yield* pipe(
+          {
+            id: 1,
+            name: "John Doe",
+            age: 30,
+            email: Option.none()
+          },
+          builder.build
+        );
+
+        expect(result).toEqual({
+          id: 1,
+          name: "John Doe",
+          age: 30,
+          email: Option.none(),
+          roles: ["user"],
+          tags: { guest: true },
+          address: Option.none()
+        });
+      }));
+  });
+
   describe("complex scenarios", () => {
     it("supports complex transformations with defaults and conditions", () =>
       Effect.gen(function* () {
