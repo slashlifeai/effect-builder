@@ -1,31 +1,81 @@
-# Effect Package Template
+# @effect/builder
 
-This template provides a solid foundation for building scalable and maintainable TypeScript package with Effect. 
+A type-safe, immutable builder pattern implementation using Effect. It enables developers to construct complex objects with runtime validation while maintaining compile-time type safety.
 
-## Running Code
+## Specification-Driven Development
 
-This template leverages [tsx](https://tsx.is) to allow execution of TypeScript files via NodeJS as if they were written in plain JavaScript.
+This project follows a specification-driven development approach:
 
-To execute a file with `tsx`:
+- [specs/SPEC.md](./specs/SPEC.md): Core specifications and features
 
-```sh
-pnpm tsx ./path/to/the/file.ts
+  - Package goals and objectives
+  - Type-safe transformations
+  - Builder pattern implementation
+  - Error handling patterns
+  - Testing requirements
+
+- [specs/ai/CODINGSTYLE.AI.md](./specs/ai/CODINGSTYLE.AI.md): AI development guidelines
+  - Type safety implementation
+  - Schema-based validation
+  - Immutable transformations
+  - Error handling patterns
+  - Code generation examples
+
+These specifications serve as the source of truth for both human developers and AI assistants, ensuring consistent and high-quality code generation.
+
+## Installation
+
+```bash
+pnpm add @effect/builder
 ```
 
-## Operations
+## Quick Start
 
-**Building**
+```typescript
+import { Builder, Schema } from "@effect/builder";
 
-To build the package:
+// Define your schema
+const UserSchema = Schema.struct({
+  name: Schema.string,
+  age: Schema.number.pipe(Schema.positive(), Schema.int()),
+});
 
-```sh
+// Create and use the builder
+const User = Builder.define(UserSchema);
+const program = Effect.gen(function* () {
+  const user = yield* pipe(
+    User.compose(
+      User.field("name", "John"),
+      User.when((user) => user.age >= 18, User.field("gender", "male"))
+    ),
+    Builder.build
+  );
+  return user;
+});
+
+const result = Effect.runSync(program);
+```
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run tests
+pnpm test
+
+# Build
 pnpm build
 ```
 
-**Testing**
+## Documentation
 
-To test the package:
+For detailed documentation and best practices, refer to our specification files:
 
-```sh
-pnpm test
-```
+- [Core Specifications](./specs/SPEC.md)
+- [AI Development Guidelines](./specs/ai/CODINGSTYLE.AI.md)
+
+## License
+
+MIT - See [LICENSE](./LICENSE) for details
