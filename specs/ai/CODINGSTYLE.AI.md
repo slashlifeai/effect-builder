@@ -2,6 +2,28 @@
 
 ## Core Requirements
 
+### Effect v3 Style
+```typescript
+// Always use uppercase Schema methods (Effect v3 style)
+const schema = Schema.Struct({  // 
+  name: Schema.String,         // 
+  age: Schema.Number,
+  tags: Schema.Array(Schema.String)
+})
+
+// Never use lowercase schema methods
+const schema = Schema.struct({  // 
+  name: Schema.string,         // 
+  age: Schema.number
+})
+
+// Use Schema.Option for optional fields
+const schema = Schema.Struct({
+  email: Schema.Option(Schema.String),  // 
+  tags: Schema.Option(Schema.Array(Schema.String))
+})
+```
+
 ### Type Safety Implementation
 ```typescript
 // Use explicit type parameters only when necessary
@@ -65,7 +87,7 @@ const updateAge = transform<User>((user) => Effect.succeed({
 
 // Never mutate input
 const wrong = transform<User>((user) => {
-  user.age += 1  // ❌ Never do this
+  user.age += 1  // 
   return Effect.fail(new ValidationError({
     _tag: "ValidationError",
     schema: Schema.parseError("Direct mutation is not allowed")
@@ -100,19 +122,22 @@ const builder = pipe(
 
 ### Error Handling
 ```typescript
-// Define error type
-export class ValidationError extends Data.TaggedError<{
-  readonly _tag: "ValidationError"
-  readonly schema: ParseError
-}> {}
+// Use ValidationError for schema validation failures
+const validateAge = transform<User>((user) => Effect.gen(function* () {
+  if (user.age < 0) {
+    yield* Effect.fail(new ValidationError({
+      _tag: "ValidationError",
+      schema: Schema.parseError("Age must be positive")
+    }))
+  }
+  return user
+}))
 
-export type BuilderError = ValidationError
-
-// Use Effect for error handling
+// Handle errors with Effect
 const program = Effect.gen(function* () {
   const result = yield* pipe(
-    builder,
-    Effect.catchTag("ValidationError", (error) => 
+    validateAge,
+    Effect.catchTag("ValidationError", (error) =>
       Effect.logError("Validation failed:", error.schema))
   )
   return result
