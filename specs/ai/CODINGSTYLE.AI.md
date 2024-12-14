@@ -171,6 +171,46 @@ export const transform: {
   <A>(f: (a: Partial<A>) => Effect<Partial<A>, ValidationError>): Transform<A>
   <A>(a: Partial<A>): Transform<A>
 } = <A>(f: (a: Partial<A>) => Effect<Partial<A>, ValidationError>) => ...
+
+### Documentation Style
+Follow Effect's documentation style for consistent API documentation:
+
+```typescript
+/**
+ * @since [version] - Always include the package version
+ * @category [category] - Group related functionality
+ *
+ * @example
+ * import * as Schema from "effect/Schema"
+ * import * as Effect from "effect/Effect"
+ * import * as Builder from "@effect/builder"
+ * import { pipe } from "effect/Function"
+ *
+ * const program = Effect.gen(function* (_) {
+ *   const builder = Builder.define(UserSchema)
+ *   const result = yield* pipe(
+ *     {},
+ *     builder.field("name", "John")
+ *   )
+ * })
+ */
+
+#### Documentation Rules
+1. Always include `@since` with the current package version
+2. Use `@category` to group related functionality:
+   - `models` for type definitions
+   - `constructors` for factory functions
+   - `combinators` for transformation functions
+   - `errors` for error types
+   - `builders` for builder methods
+   - `type-level` for type utilities
+3. Examples should:
+   - Use Effect's import style (`effect/[Module]`)
+   - Show practical use cases with `Effect.gen`
+   - Include proper type annotations
+   - Demonstrate idiomatic usage patterns
+4. Keep examples concise but complete
+5. No need to document parameters - TypeScript types are self-documenting
 ```
 
 ## Development Process
@@ -210,7 +250,7 @@ describe("User Builder", () => {
 
     expect(Effect.runSync(program)).toBeDefined()
   })
-})
+}
 ```
 
 ### Debugging
