@@ -1,4 +1,4 @@
-# AI Coding Style Guide for @effect/builder
+# AI Coding Style Guide for effect-builder
 
 ## Core Requirements
 
@@ -183,7 +183,7 @@ Follow Effect's documentation style for consistent API documentation:
  * @example
  * import * as Schema from "effect/Schema"
  * import * as Effect from "effect/Effect"
- * import * as Builder from "@effect/builder"
+ * import * as Builder from "effect-builder"
  * import { pipe } from "effect/Function"
  *
  * const program = Effect.gen(function* (_) {

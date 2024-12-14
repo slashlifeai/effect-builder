@@ -1,4 +1,4 @@
-# @effect/builder
+# effect-builder
 
 A type-safe, immutable builder pattern implementation using Effect. It enables developers to construct complex objects with runtime validation while maintaining compile-time type safety.
 
@@ -26,18 +26,18 @@ These specifications serve as the source of truth for both human developers and 
 ## Quick Start
 
 ```typescript
-import { Schema, Effect, pipe } from "effect"
-import * as Builder from "@effect/builder"
+import { Schema, Effect, pipe } from "effect";
+import * as Builder from "effect-builder";
 
 // Define your schema
 const UserSchema = Schema.struct({
-  name: Schema.string,
-  age: Schema.number,
-  email: Schema.optional(Schema.string)
-})
+  name: Schema.String,
+  age: Schema.Number,
+  email: Schema.optional(Schema.String),
+});
 
 // Create a builder
-const User = Builder.define(UserSchema)
+const User = Builder.define(UserSchema);
 
 // Build an object with type-safe transformations
 const program = Effect.gen(function* () {
@@ -50,12 +50,12 @@ const program = Effect.gen(function* () {
       User.field("email")("john@example.com")
     ),
     User.build
-  )
+  );
   // user: { name: string; age: number; email: string | undefined }
-})
+});
 
 // Run the program
-Effect.runPromise(program)
+Effect.runPromise(program);
 ```
 
 ## Features
@@ -70,32 +70,32 @@ Effect.runPromise(program)
 ## Installation
 
 ```bash
-npm install @effect/builder
+npm install effect-builder
 ```
 
 ## Example Usage
 
 ```typescript
-import { Schema, Effect, pipe } from "effect"
-import * as Builder from "@effect/builder"
+import { Schema, Effect, pipe } from "effect";
+import * as Builder from "effect-builder";
 
 // Define a complex schema
 const MessageSchema = Schema.struct({
-  type: Schema.union(Schema.literal("text"), Schema.literal("flex")),
-  content: Schema.string,
+  type: Schema.union(Schema.Literal("text"), Schema.Literal("flex")),
+  content: Schema.String,
   options: Schema.optional(
-    Schema.struct({
-      color: Schema.optional(Schema.string),
-      size: Schema.optional(Schema.number)
+    Schema.Struct({
+      color: Schema.optional(Schema.String),
+      size: Schema.optional(Schema.Number),
     })
-  )
-})
+  ),
+});
 
 // Create a builder with defaults
 const Message = Builder.define(MessageSchema, {
   type: "text",
-  content: ""
-})
+  content: "",
+});
 
 // Build with type-safe transformations
 const program = Effect.gen(function* () {
@@ -107,13 +107,13 @@ const program = Effect.gen(function* () {
       (type: "text" | "flex") => type === "flex",
       Message.field("options")({
         color: "red",
-        size: 14
+        size: 14,
       })
     ),
-    Message.build
-  )
+    Builder.build
+  );
   // message is fully typed and validated
-})
+});
 ```
 
 ## Development

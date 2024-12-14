@@ -1,6 +1,6 @@
 {
-  "name": "@effect/builder",
-  "version": "0.0.1",
+  "name": "effect-builder",
+  "version": "0.1.0",
   "type": "module",
   "packageManager": "pnpm@9.10.0",
   "license": "MIT",

@@ -1,6 +1,6 @@
 # Directing AI in Development
 
-This guide outlines how to effectively use AI to assist in developing the @effect/builder project, focusing on our specification-driven development approach.
+This guide outlines how to effectively use AI to assist in developing the effect-builder project, focusing on our specification-driven development approach.
 
 ## Specification-Driven Development
 
@@ -181,7 +181,7 @@ Based on these, I'll generate an implementation that follows our established pat
 1. Initial structure:
 
    ```
-   "Help me create SPEC.md for @effect/builder v0.0.1:
+   "Help me create SPEC.md for effect-builder v0.0.1:
    1. What are the core concepts we need to define?
    2. What type definitions should we include?
    3. How should we structure the API?
@@ -470,7 +470,7 @@ Maintaining version docs:
 1. Create project structure:
 
    ```
-   "I want to create a new Effect library called @effect/builder. Help me:
+   "I want to create a new Effect library called effect-builder. Help me:
    1. Set up the initial project structure
    2. Create package.json with Effect ecosystem dependencies
    3. Set up basic README.md
@@ -534,7 +534,7 @@ Maintaining version docs:
 1. Specification first:
 
    ```
-   "I want to add [feature] to @effect/builder:
+   "I want to add [feature] to effect-builder:
    1. How should we update SPEC.md?
    2. What types and interfaces do we need?
    3. How should we handle errors?
@@ -679,7 +679,7 @@ Always include:
 Example:
 
 ```
-"We're working on @effect/builder v0.0.1, specifically the validation feature in src/validation.ts.
+"We're working on effect-builder v0.0.1, specifically the validation feature in src/validation.ts.
 Currently, we handle errors using ValidationError from Effect. I want to..."
 ```
 

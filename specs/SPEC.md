@@ -1,6 +1,6 @@
-# @effect/builder v0.0.1 Specification
+# effect-builder v0.1.0 Specification
 
-@effect/builder is a TypeScript library that provides a type-safe, immutable builder pattern implementation using Effect. It enables developers to construct complex objects with runtime validation while maintaining compile-time type safety.
+effect-builder is a TypeScript library that provides a type-safe, immutable builder pattern implementation using Effect. It enables developers to construct complex objects with runtime validation while maintaining compile-time type safety.
 
 ## Package Goals
 
@@ -41,21 +41,18 @@ Example usage:
 const UserSchema = Schema.struct({
   name: Schema.string,
   age: Schema.number,
-  roles: Schema.array(Schema.string)
-})
+  roles: Schema.array(Schema.string),
+});
 
 const program = Effect.gen(function* () {
-  const builder = define(UserSchema)
+  const builder = define(UserSchema);
   const result = yield* pipe(
     {},
     builder.field("name")("John"),
     builder.field("age")(30),
-    builder.when(
-      (age: number) => age >= 18,
-      builder.field("roles")(["adult"])
-    )
-  )
-})
+    builder.when((age: number) => age >= 18, builder.field("roles")(["adult"]))
+  );
+});
 ```
 
 ### Builder
