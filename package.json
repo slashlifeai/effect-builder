@@ -1,13 +1,13 @@
 {
-  "name": "@template/basic",
-  "version": "0.0.0",
+  "name": "@effect/builder",
+  "version": "0.0.1",
   "type": "module",
   "packageManager": "pnpm@9.10.0",
   "license": "MIT",
-  "description": "A basic Effect package",
+  "description": "A type-safe, immutable builder pattern implementation using Effect. It enables developers to construct complex objects with runtime validation while maintaining compile-time type safety.",
   "repository": {
     "type": "git",
-    "url": "<PLACEHOLDER>"
+    "url": "https://github.com/slashlifeai/effect-builder.git"
   },
   "publishConfig": {
     "access": "public",
