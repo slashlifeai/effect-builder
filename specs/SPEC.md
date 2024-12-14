@@ -29,9 +29,32 @@ const define = <A>(
   schema: Schema<A>,
   defaults?: Partial<A>
 ) => ({
-  field: <K extends keyof A>(key: K, value: A[K]): Transform<A>,
+  field: <K extends keyof A>(key: K) => (value: A[K]): Transform<A>,
   when: (predicate: (a: Partial<A>) => boolean, transform: Transform<A>): Transform<A>,
   compose: (...transforms: Transform<A>[]): Transform<A>
+})
+```
+
+Example usage:
+
+```typescript
+const UserSchema = Schema.struct({
+  name: Schema.string,
+  age: Schema.number,
+  roles: Schema.array(Schema.string)
+})
+
+const program = Effect.gen(function* () {
+  const builder = define(UserSchema)
+  const result = yield* pipe(
+    {},
+    builder.field("name")("John"),
+    builder.field("age")(30),
+    builder.when(
+      (age: number) => age >= 18,
+      builder.field("roles")(["adult"])
+    )
+  )
 })
 ```
 

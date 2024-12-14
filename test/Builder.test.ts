@@ -24,7 +24,7 @@ describe("define", () => {
     it("sets primitive field values", () =>
       Effect.gen(function* () {
         const builder = define(UserSchema);
-        const result = yield* pipe({}, builder.field("name", "John Doe"));
+        const result = yield* pipe({}, builder.field("name")("John Doe"));
         expect(result).toEqual({ name: "John Doe", age: 30 });
       }));
 
@@ -34,7 +34,7 @@ describe("define", () => {
         const address = { street: "123 Main St", city: "NY", country: "USA" };
         const result = yield* pipe(
           {},
-          builder.field("address", Option.some(address))
+          builder.field("address")(Option.some(address))
         );
         expect(result).toEqual({ address: Option.some(address) });
       }));
@@ -44,7 +44,7 @@ describe("define", () => {
         const builder = define(UserSchema);
         const result = yield* pipe(
           {},
-          builder.field("roles", ["admin", "user"])
+          builder.field("roles")(["admin", "user"])
         );
         expect(result).toEqual({ roles: ["admin", "user"] });
       }));
@@ -54,7 +54,7 @@ describe("define", () => {
         const builder = define(UserSchema);
         const result = yield* pipe(
           {},
-          builder.field("tags", { active: true, verified: false })
+          builder.field("tags")({ active: true, verified: false })
         );
         expect(result).toEqual({ tags: { active: true, verified: false } });
       }));
@@ -64,7 +64,7 @@ describe("define", () => {
         const builder = define(UserSchema);
         const result = yield* pipe(
           { name: "Old Name" },
-          builder.field("name", "New Name")
+          builder.field("name")("New Name")
         );
         expect(result).toEqual({ name: "New Name" });
       }));
@@ -72,7 +72,7 @@ describe("define", () => {
     it("handles undefined fields gracefully", () =>
       Effect.gen(function* () {
         const builder = define(UserSchema);
-        const result = yield* pipe({}, builder.field("email", Option.none()));
+        const result = yield* pipe({}, builder.field("email")(Option.none()));
         expect(result).toEqual({ email: Option.none() });
       }));
   });
@@ -85,7 +85,7 @@ describe("define", () => {
           { age: 20 },
           builder.when(
             (age: number) => age >= 18,
-            builder.field("roles", ["adult"])
+            builder.field("roles")(["adult"])
           )
         );
         expect(result).toEqual({ age: 20, roles: ["adult"] });
@@ -98,7 +98,7 @@ describe("define", () => {
           { email: Option.some("test@example.com") },
           builder.when(
             (email: string) => email.includes("@"),
-            builder.field("roles", ["verified"])
+            builder.field("roles")(["verified"])
           )
         );
         expect(result).toEqual({
@@ -114,7 +114,7 @@ describe("define", () => {
           { roles: ["admin"] },
           builder.when(
             (roles: Array<string>) => roles.includes("admin"),
-            builder.field("tags", { isAdmin: true })
+            builder.field("tags")({ isAdmin: true })
           )
         );
         expect(result).toEqual({
@@ -130,7 +130,7 @@ describe("define", () => {
           { age: 15 },
           builder.when(
             (age: number) => age >= 18,
-            builder.field("roles", ["adult"])
+            builder.field("roles")(["adult"])
           )
         );
         expect(result).toEqual({ age: 15 });
@@ -143,7 +143,7 @@ describe("define", () => {
           {},
           builder.when(
             (age: number) => age >= 18,
-            builder.field("roles", ["adult"])
+            builder.field("roles")(["adult"])
           )
         );
         expect(result).toEqual({});
@@ -158,7 +158,7 @@ describe("define", () => {
             (age: number) => age >= 18,
             builder.when(
               (roles: Array<string>) => roles.includes("premium"),
-              builder.field("tags", { premium: true, adult: true })
+              builder.field("tags")({ premium: true, adult: true })
             )
           )
         );
@@ -176,7 +176,7 @@ describe("define", () => {
           { name: "John" }, // string type doesn't match number predicate
           builder.when(
             (age: number) => age >= 18,
-            builder.field("roles", ["adult"])
+            builder.field("roles")(["adult"])
           )
         );
         expect(result).toEqual({ name: "John" });
@@ -192,7 +192,7 @@ describe("define", () => {
           },
           builder.when(
             (str: string) => str.length > 2,
-            builder.field("roles", ["valid"])
+            builder.field("roles")(["valid"])
           )
         );
         expect(result).toEqual({
@@ -208,7 +208,7 @@ describe("define", () => {
           { email: Option.none() },
           builder.when(
             (email: string) => email.includes("@"),
-            builder.field("roles", ["verified"])
+            builder.field("roles")(["verified"])
           )
         );
         expect(result).toEqual({ email: Option.none() });
@@ -222,10 +222,10 @@ describe("define", () => {
         const result = yield* pipe(
           {},
           builder.compose(
-            builder.field("id", 1),
-            builder.field("name", "test"),
-            builder.field("age", 25),
-            builder.field("roles", ["user"])
+            builder.field("id")(1),
+            builder.field("name")("test"),
+            builder.field("age")(25),
+            builder.field("roles")(["user"])
           )
         );
         expect(result).toEqual({
@@ -244,11 +244,11 @@ describe("define", () => {
           builder.compose(
             builder.when(
               (age: number) => age >= 18,
-              builder.field("roles", ["adult"])
+              builder.field("roles")(["adult"])
             ),
             builder.when(
               (id: number) => id > 0,
-              builder.field("tags", { active: true })
+              builder.field("tags")({ active: true })
             )
           )
         );
@@ -270,8 +270,8 @@ describe("define", () => {
         const result = yield* pipe(
           {},
           builder.compose(
-            builder.field("name", "test"),
-            builder.field("age", 25)
+            builder.field("name")("test"),
+            builder.field("age")(25)
           )
         );
         expect(result).toEqual({
@@ -302,9 +302,9 @@ describe("define", () => {
         const program = pipe(
           {},
           builder.compose(
-            builder.field("name", "John"),
-            builder.field("age", -1), // This will fail validation
-            builder.field("roles", ["user"])
+            builder.field("name")("John"),
+            builder.field("age")(-1), // This will fail validation
+            builder.field("roles")(["user"])
           ),
           builder.build
         );
@@ -321,7 +321,7 @@ describe("define", () => {
           builder.compose(
             builder.when(
               (age: number) => age >= 18,
-              builder.field("address", {
+              builder.field("address")({
                 // @ts-ignore
                 street: 123, // Invalid type
                 city: "NY",
@@ -554,12 +554,11 @@ describe("define", () => {
         const result = yield* pipe(
           {},
           builder.compose(
-            builder.field("id", 1),
-            builder.field("name", "John Doe"),
-            builder.field("age", 30),
-            builder.field("email", Option.some("john@example.com")),
-            builder.field(
-              "address",
+            builder.field("id")(1),
+            builder.field("name")("John Doe"),
+            builder.field("age")(30),
+            builder.field("email")(Option.some("john@example.com")),
+            builder.field("address")(
               Option.some({
                 street: "123 Main St",
                 city: "New York",
@@ -569,8 +568,8 @@ describe("define", () => {
             builder.when(
               (age: number) => age >= 18,
               builder.compose(
-                builder.field("roles", ["adult", "user"]),
-                builder.field("tags", { adult: true, active: true })
+                builder.field("roles")(["adult", "user"]),
+                builder.field("tags")({ adult: true, active: true })
               )
             )
           )
@@ -602,15 +601,15 @@ describe("define", () => {
           builder.compose(
             builder.when(
               (age: number) => age >= 18,
-              builder.field("tags", { adult: true })
+              builder.field("tags")({ adult: true })
             ),
             builder.when(
               (email: string) => email.endsWith(".com"),
-              builder.field("tags", { commercial: true })
+              builder.field("tags")({ commercial: true })
             ),
             builder.when(
               (roles: Array<string>) => roles.includes("premium"),
-              builder.field("tags", { premium: true })
+              builder.field("tags")({ premium: true })
             )
           )
         );
@@ -639,13 +638,12 @@ describe("define", () => {
                 builder.when(
                   (email: string) => email.includes("@"),
                   builder.compose(
-                    builder.field("tags", {
+                    builder.field("tags")({
                       premium: true,
                       adult: true,
                       verified: true,
                     }),
-                    builder.field(
-                      "address",
+                    builder.field("address")(
                       Option.some({
                         street: "Premium St",
                         city: "Elite City",
@@ -704,9 +702,9 @@ describe("define", () => {
           {},
           builder.compose(
             // Age should always be positive after any transformation
-            builder.field("age", 20),
-            builder.when((age: number) => age >= 18, builder.field("age", 25)),
-            builder.when((age: number) => age >= 21, builder.field("age", 30))
+            builder.field("age")(20),
+            builder.when((age: number) => age >= 18, builder.field("age")(25)),
+            builder.when((age: number) => age >= 21, builder.field("age")(30))
           ),
           builder.build
         );
@@ -722,7 +720,7 @@ describe("define", () => {
         const addRole =
           (role: string): Transform<typeof UserSchema.Type> =>
           (a) =>
-            pipe(a, builder.field("roles", (a.roles || []).concat(role)));
+            pipe(a, builder.field("roles")((a.roles || []).concat(role)));
 
         const addRoleWithCheck =
           (
@@ -756,16 +754,16 @@ describe("define", () => {
         const result = yield* pipe(
           { id: 1 },
           builder.compose(
-            builder.field("name", "test"),
+            builder.field("name")("test"),
             builder.when(
               (name: string) => name === "test",
               builder.compose(
-                builder.field("age", 20),
+                builder.field("age")(20),
                 builder.when(
                   (age: number) => age >= 18,
                   builder.compose(
-                    builder.field("roles", ["user"]),
-                    builder.field("tags", { active: true })
+                    builder.field("roles")(["user"]),
+                    builder.field("tags")({ active: true })
                   )
                 )
               )

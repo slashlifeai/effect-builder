@@ -23,37 +23,97 @@ This project follows a specification-driven development approach:
 
 These specifications serve as the source of truth for both human developers and AI assistants, ensuring consistent and high-quality code generation.
 
-## Installation
-
-```bash
-pnpm add @effect/builder
-```
-
 ## Quick Start
 
 ```typescript
-import { Builder, Schema } from "@effect/builder";
+import { Schema, Effect, pipe } from "effect"
+import * as Builder from "@effect/builder"
 
 // Define your schema
 const UserSchema = Schema.struct({
   name: Schema.string,
-  age: Schema.number.pipe(Schema.positive(), Schema.int()),
-});
+  age: Schema.number,
+  email: Schema.optional(Schema.string)
+})
 
-// Create and use the builder
-const User = Builder.define(UserSchema);
+// Create a builder
+const User = Builder.define(UserSchema)
+
+// Build an object with type-safe transformations
 const program = Effect.gen(function* () {
   const user = yield* pipe(
-    User.compose(
-      User.field("name", "John"),
-      User.when((user) => user.age >= 18, User.field("gender", "male"))
+    {},
+    User.field("name")("John"),
+    User.field("age")(30),
+    User.when(
+      (age: number) => age >= 18,
+      User.field("email")("john@example.com")
     ),
-    Builder.build
-  );
-  return user;
-});
+    User.build
+  )
+  // user: { name: string; age: number; email: string | undefined }
+})
 
-const result = Effect.runSync(program);
+// Run the program
+Effect.runPromise(program)
+```
+
+## Features
+
+- Type-safe field transformations using Effect's Schema system
+- Immutable builder pattern with composable operations
+- Curried functions for better composition
+- Runtime validation with comprehensive error handling
+- Support for conditional transformations
+- Full TypeScript support with type inference
+
+## Installation
+
+```bash
+npm install @effect/builder
+```
+
+## Example Usage
+
+```typescript
+import { Schema, Effect, pipe } from "effect"
+import * as Builder from "@effect/builder"
+
+// Define a complex schema
+const MessageSchema = Schema.struct({
+  type: Schema.union(Schema.literal("text"), Schema.literal("flex")),
+  content: Schema.string,
+  options: Schema.optional(
+    Schema.struct({
+      color: Schema.optional(Schema.string),
+      size: Schema.optional(Schema.number)
+    })
+  )
+})
+
+// Create a builder with defaults
+const Message = Builder.define(MessageSchema, {
+  type: "text",
+  content: ""
+})
+
+// Build with type-safe transformations
+const program = Effect.gen(function* () {
+  const message = yield* pipe(
+    {},
+    Message.field("type")("flex"),
+    Message.field("content")("Hello"),
+    Message.when(
+      (type: "text" | "flex") => type === "flex",
+      Message.field("options")({
+        color: "red",
+        size: 14
+      })
+    ),
+    Message.build
+  )
+  // message is fully typed and validated
+})
 ```
 
 ## Development

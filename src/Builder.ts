@@ -1,4 +1,4 @@
-import { Data, Effect, Option, pipe, Schema } from "effect"
+import { Data, Effect, Option, pipe, Schema } from "effect";
 
 /**
  * @since 0.0.1
@@ -6,29 +6,31 @@ import { Data, Effect, Option, pipe, Schema } from "effect"
  */
 export type Transform<A> = (
   a: Partial<A>
-) => Effect.Effect<Partial<A>, BuilderError>
+) => Effect.Effect<Partial<A>, BuilderError>;
 
 /**
  * @since 0.0.1
  * @category errors
  */
 export class ValidationError extends Data.TaggedError("ValidationError")<{
-  message: string
+  message: string;
 }> {}
 
 /**
  * @since 0.0.1
  * @category errors
  */
-export type BuilderError = ValidationError
+export type BuilderError = ValidationError;
 
 /**
  * @since 0.0.1
  * @category type-level
  */
-type ExtractKey<F, A> = F extends (value: any) => any ? never
-  : F extends (value: infer V) => boolean ? { [K in keyof A]: A[K] extends V ? K : never }[keyof A]
-  : never
+type ExtractKey<F, A> = F extends (value: any) => any
+  ? never
+  : F extends (value: infer V) => boolean
+  ? { [K in keyof A]: A[K] extends V ? K : never }[keyof A]
+  : never;
 
 /**
  * Creates a builder for constructing objects with runtime validation.
@@ -79,8 +81,11 @@ export const define = <A, E, R>(
    *   )
    * })
    */
-  field: <K extends keyof A>(key: K, value: A[K]): Transform<A> => (a) =>
-    Effect.succeed({ ...a, ...defaults, [key]: value }),
+  field:
+    <K extends keyof A>(key: K) =>
+    (value: A[K]): Transform<A> =>
+    (a) =>
+      Effect.succeed({ ...a, ...defaults, [key]: value }),
 
   /**
    * Applies a transformation function conditionally based on a predicate.
@@ -104,21 +109,22 @@ export const define = <A, E, R>(
    *   )
    * })
    */
-  when: <F extends (value: any) => boolean>(
-    predicate: F,
-    transform: Transform<A>
-  ): Transform<A> =>
-  (a) => {
-    const key = (Object.keys(a) as Array<keyof A>).find(
-      (k) => typeof a[k] === typeof predicate.arguments
-    ) as ExtractKey<F, A>
-    return Option.fromNullable(key ? a[key] : undefined).pipe(
+  when:
+    <F extends (value: any) => boolean>(
+      predicate: F,
+      transform: Transform<A>
+    ): Transform<A> =>
+    (a) => {
+      const key = (Object.keys(a) as Array<keyof A>).find(
+        (k) => typeof a[k] === typeof predicate.arguments
+      ) as ExtractKey<F, A>;
+      return Option.fromNullable(key ? a[key] : undefined).pipe(
         Option.map(predicate),
         Option.getOrElse(() => false)
       )
-      ? transform(a)
-      : Effect.succeed({ ...a, ...defaults })
-  },
+        ? transform(a)
+        : Effect.succeed({ ...a, ...defaults });
+    },
 
   /**
    * Composes multiple transformation functions into a single transformation function.
@@ -146,12 +152,14 @@ export const define = <A, E, R>(
    *   )
    * })
    */
-  compose: (...transforms: Array<Transform<A>>): Transform<A> => (a) =>
-    // Apply each transformation in sequence, starting with the initial state
-    pipe(
-      transforms,
-      Effect.reduce({ ...a, ...defaults }, (acc, transform) => transform(acc))
-    ),
+  compose:
+    (...transforms: Array<Transform<A>>): Transform<A> =>
+    (a) =>
+      // Apply each transformation in sequence, starting with the initial state
+      pipe(
+        transforms,
+        Effect.reduce({ ...a, ...defaults }, (acc, transform) => transform(acc))
+      ),
 
   /**
    * Validates and builds the final object according to the schema.
@@ -181,7 +189,8 @@ export const define = <A, E, R>(
       { ...a, ...defaults },
       Schema.decodeUnknown(schema),
       Effect.mapError(
-        (error) => new ValidationError({ message: "Schema validation failed: " + error })
+        (error) =>
+          new ValidationError({ message: "Schema validation failed: " + error })
       )
-    )
-})
+    ),
+});
