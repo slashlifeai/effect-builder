@@ -37,13 +37,12 @@ type ExtractKey<F, A> = F extends (value: any) => any ? never
  * @category constructors
  *
  * @example
- * import * as Schema from "effect/Schema"
- * import * as Effect from "effect/Effect"
- * import * as Builder from "@effect/builder"
+ * import { Schema, Effect } from "effect"
+ * import * as Builder from "effect-builder"
  *
  * const UserSchema = Schema.struct({
- *   name: Schema.string,
- *   age: Schema.number
+ *   name: Schema.String,
+ *   age: Schema.Number
  * })
  *
  * const program = Effect.gen(function* (_) {
@@ -67,9 +66,8 @@ export const define = <A, E, R>(
    * @category builders
    *
    * @example
-   * import * as Builder from "@effect/builder"
-   * import * as Effect from "effect/Effect"
-   * import { pipe } from "effect/Function"
+   * import { pipe, Effect } from "effect"
+   * import * as Builder from "effect-builder"
    *
    * const program = Effect.gen(function* (_) {
    *   const builder = Builder.define(UserSchema)
@@ -89,9 +87,8 @@ export const define = <A, E, R>(
    * @category builders
    *
    * @example
-   * import * as Builder from "@effect/builder"
-   * import * as Effect from "effect/Effect"
-   * import { pipe } from "effect/Function"
+   * import { pipe, Effect } from "effect"
+   * import * as Builder from "effect-builder"
    *
    * const program = Effect.gen(function* (_) {
    *   const builder = Builder.define(UserSchema)
@@ -127,9 +124,8 @@ export const define = <A, E, R>(
    * @category builders
    *
    * @example
-   * import * as Builder from "@effect/builder"
-   * import * as Effect from "effect/Effect"
-   * import { pipe } from "effect/Function"
+   * import * as Builder from "effect-builder"
+   * import { pipe, Effect } from "effect"
    *
    * const program = Effect.gen(function* (_) {
    *   const builder = Builder.define(UserSchema)
@@ -160,10 +156,8 @@ export const define = <A, E, R>(
    * @category builders
    *
    * @example
-   * import * as Schema from "effect/Schema"
-   * import * as Effect from "effect/Effect"
-   * import * as Builder from "@effect/builder"
-   * import { pipe } from "effect/Function"
+   * import { Schema, pipe, Effect } from "effect"
+   * import * as Builder from "effect-builder"
    *
    * const program = Effect.gen(function* (_) {
    *   const builder = Builder.define(UserSchema)

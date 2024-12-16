@@ -110,7 +110,7 @@ const program = Effect.gen(function* () {
         size: 14,
       })
     ),
-    Builder.build
+    Message.build
   );
   // message is fully typed and validated
 });
