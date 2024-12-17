@@ -1,5 +1,5 @@
 /**
- * @since 0.1.0
- * @category models
+ * @since 0.2.0
+ * @category errors
  */
 export * as Builder from "./Builder.js"
