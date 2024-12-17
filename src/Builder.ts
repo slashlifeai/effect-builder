@@ -1,181 +1,81 @@
-import { Data, Effect, Option, pipe, Schema } from "effect"
+import { Data, Effect, pipe, Schema } from "effect"
 
 /**
- * @since 0.1.0
- * @category models
- */
-export type Transform<A> = (
-  a: Partial<A>
-) => Effect.Effect<Partial<A>, BuilderError>
-
-/**
- * @since 0.1.0
+ * @since 0.2.0
  * @category errors
  */
 export class ValidationError extends Data.TaggedError("ValidationError")<{
-  message: string
+  readonly message: string
 }> {}
 
 /**
- * @since 0.1.0
+ * @since 0.2.0
  * @category errors
  */
-export type BuilderError = ValidationError
+export class BuilderError extends Data.TaggedError("BuilderError") {}
 
 /**
- * @since 0.1.0
- * @category type-level
+ * @since 0.2.0
+ * @category models
  */
-type ExtractKey<F, A> = F extends (value: any) => any ? never
-  : F extends (value: infer V) => boolean ? { [K in keyof A]: A[K] extends V ? K : never }[keyof A]
-  : never
+export type Transform<A> = (a: Partial<A>) => Effect.Effect<Partial<A>, never, never>
+
+/**
+ * @since 0.2.0
+ * @category models
+ */
+export interface Builder<A, E, R> {
+  readonly schema: Schema.Schema<A, E, R>
+  readonly Default: Partial<A>
+  readonly field: <K extends keyof A>(key: K) => {
+    readonly set: <V extends A[K]>(value: V) => Transform<A>
+    readonly modify: (f: (value: A[K] | undefined) => A[K]) => Transform<A>
+    readonly get: (a: Partial<A>) => A[K] | undefined
+  }
+  readonly when: (
+    predicate: (a: Partial<A>) => boolean,
+    ifTrue: Transform<A>,
+    ifFalse?: Transform<A>
+  ) => Transform<A>
+  readonly build: (transform: Transform<A>) => Effect.Effect<A, E | ValidationError, R>
+}
 
 /**
  * Creates a builder for constructing objects with runtime validation.
  *
- * @since 0.1.0
+ * @since 0.2.0
  * @category constructors
- *
- * @example
- * import { Schema, Effect } from "effect"
- * import * as Builder from "effect-builder"
- *
- * const UserSchema = Schema.struct({
- *   name: Schema.String,
- *   age: Schema.Number
- * })
- *
- * const program = Effect.gen(function* (_) {
- *   const builder = Builder.define(UserSchema)
- *   const result = yield* pipe(
- *     {},
- *     builder.field("name", "John"),
- *     builder.field("age", 30)
- *   )
- *   // result: { name: string; age: number }
- * })
  */
 export const define = <A, E, R>(
   schema: Schema.Schema<A, E, R>,
-  defaults: Partial<A> = {}
-) => ({
-  /**
-   * Sets a field of the object being built to a specific value.
-   *
-   * @since 0.1.0
-   * @category builders
-   *
-   * @example
-   * import { pipe, Effect } from "effect"
-   * import * as Builder from "effect-builder"
-   *
-   * const program = Effect.gen(function* (_) {
-   *   const builder = Builder.define(UserSchema)
-   *   const result = yield* pipe(
-   *     {},
-   *     builder.field("name", "John")
-   *   )
-   * })
-   */
-  field: <K extends keyof A>(key: K) => (value: A[K]): Transform<A> => (a) =>
-    Effect.succeed({ ...a, ...defaults, [key]: value }),
-
-  /**
-   * Applies a transformation function conditionally based on a predicate.
-   *
-   * @since 0.1.0
-   * @category builders
-   *
-   * @example
-   * import { pipe, Effect } from "effect"
-   * import * as Builder from "effect-builder"
-   *
-   * const program = Effect.gen(function* (_) {
-   *   const builder = Builder.define(UserSchema)
-   *   const result = yield* pipe(
-   *     { age: 20 },
-   *     builder.when(
-   *       (age: number) => age >= 18,
-   *       builder.field("roles", ["adult"])
-   *     )
-   *   )
-   * })
-   */
-  when: <F extends (value: any) => boolean>(
-    predicate: F,
-    transform: Transform<A>
-  ): Transform<A> =>
-  (a) => {
-    const key = (Object.keys(a) as Array<keyof A>).find(
-      (k) => typeof a[k] === typeof predicate.arguments
-    ) as ExtractKey<F, A>
-    return Option.fromNullable(key ? a[key] : undefined).pipe(
-        Option.map(predicate),
-        Option.getOrElse(() => false)
-      )
-      ? transform(a)
-      : Effect.succeed({ ...a, ...defaults })
-  },
-
-  /**
-   * Composes multiple transformation functions into a single transformation function.
-   *
-   * @since 0.1.0
-   * @category builders
-   *
-   * @example
-   * import * as Builder from "effect-builder"
-   * import { pipe, Effect } from "effect"
-   *
-   * const program = Effect.gen(function* (_) {
-   *   const builder = Builder.define(UserSchema)
-   *   const result = yield* pipe(
-   *     {},
-   *     builder.compose(
-   *       builder.field("name", "John"),
-   *       builder.field("age", 30),
-   *       builder.when(
-   *         (age: number) => age >= 18,
-   *         builder.field("roles", ["adult"])
-   *       )
-   *     )
-   *   )
-   * })
-   */
-  compose: (...transforms: Array<Transform<A>>): Transform<A> => (a) =>
-    // Apply each transformation in sequence, starting with the initial state
+  defaults: Partial<A> = {} as Partial<A>
+): Builder<A, E, R> => ({
+  schema,
+  Default: defaults,
+  field: <K extends keyof A>(key: K) => ({
+    set: <V extends A[K]>(value: V) => (a: Partial<A>) => Effect.succeed({ ...a, [key]: value }),
+    modify: (f: (value: A[K] | undefined) => A[K]) => (a: Partial<A>) => Effect.succeed({ ...a, [key]: f(a[key]) }),
+    get: (a: Partial<A>) => a[key]
+  }),
+  when: (predicate, ifTrue, ifFalse = Effect.succeed) => (a: Partial<A>) => predicate(a) ? ifTrue(a) : ifFalse(a),
+  build: (transform) =>
     pipe(
-      transforms,
-      Effect.reduce({ ...a, ...defaults }, (acc, transform) => transform(acc))
-    ),
-
-  /**
-   * Validates and builds the final object according to the schema.
-   *
-   * @since 0.1.0
-   * @category builders
-   *
-   * @example
-   * import { Schema, pipe, Effect } from "effect"
-   * import * as Builder from "effect-builder"
-   *
-   * const program = Effect.gen(function* (_) {
-   *   const builder = Builder.define(UserSchema)
-   *   const user = yield* pipe(
-   *     {},
-   *     builder.field("name", "John"),
-   *     builder.field("age", 30),
-   *     builder.build
-   *   )
-   *   // user is fully typed and validated
-   * })
-   */
-  build: (a: any) =>
-    pipe(
-      { ...a, ...defaults },
-      Schema.decodeUnknown(schema),
-      Effect.mapError(
-        (error) => new ValidationError({ message: "Schema validation failed: " + error })
+      transform(defaults),
+      Effect.flatMap((result) =>
+        pipe(
+          Schema.decodeUnknown(schema)(result),
+          Effect.mapError((error) => new ValidationError({ message: `Schema validation failed: ${error}` }))
+        )
       )
     )
 })
+
+/**
+ * @since 0.2.0
+ * @category combinators
+ */
+export const compose = <A>(...transforms: Array<Transform<A>>): Transform<A> => (a: Partial<A>) =>
+  transforms.reduce(
+    (effect, transform) => Effect.flatMap(effect, transform),
+    Effect.succeed(a)
+  )
