@@ -32,43 +32,67 @@ import { compose, define } from "effect-builder";
 // Define your schema
 const UserSchema = Schema.Struct({
   name: Schema.String,
-  age: Schema.Number,
-  email: Schema.Option(Schema.String),
+  age: Schema.Number.pipe(Schema.positive(), Schema.int()),
+  roles: Schema.Array(Schema.String)
 });
+
+type User = typeof UserSchema.Type
 
 // Create a builder with defaults
-const userBuilder = define(UserSchema, {
+const User = define(UserSchema, {
   name: "",
   age: 0,
-  email: Option.none()
+  roles: [] as string[]
 });
 
-// Create helper functions for better readability
-const withName = (name: string) => userBuilder.field("name").set(name);
-const withAge = (age: number) => userBuilder.field("age").set(age);
-const withEmail = (email: string) => userBuilder.field("email").set(Option.some(email));
+// Use auto-generated lenses for field access
+const result = pipe(
+  compose(
+    User.name("John"),        // Direct field setter
+    User.age(30),            // Type-safe field setter
+    User.roles.modify(       // Lens-based modification
+      roles => [...roles, "admin"]
+    )
+  ),
+  User.build
+)
 
-// Build an object with type-safe transformations
-const program = Effect.gen(function* () {
-  const user = yield* pipe(
-    compose(
-      withName("John"),
-      withAge(30),
-      userBuilder.when(
-        (user) => user.age >= 18,
-        withEmail("john@example.com")
-      )
-    ),
-    userBuilder.build
-  );
-  // user: { name: string; age: number; email: Option<string> }
-});
-
-// Run the program
-Effect.runPromise(program);
+// Result will be:
+// {
+//   name: "John",
+//   age: 30,
+//   roles: ["admin"]
+// }
 ```
 
 ## Features
+
+### Auto-generated Lenses
+
+The library automatically generates type-safe lenses for each field in your schema. This provides:
+
+- **Direct Field Access**: Use `User.fieldName(value)` for simple field setting
+- **Lens Operations**: Each field gets `get`, `set`, and `modify` operations
+- **Type Safety**: Full type inference and compile-time checking
+- **Immutability**: All operations produce new objects without mutation
+
+Example of lens operations:
+```typescript
+// Direct field setting
+User.name("John")
+
+// Lens-based modification
+User.roles.modify(roles => [...roles, "admin"])
+
+// Composition of multiple operations
+compose(
+  User.name("John"),
+  User.age(30),
+  User.roles.modify(roles => [...roles, "admin"])
+)
+```
+
+### Type-Safe Field Operations
 
 - **Type-Safe Field Operations**: Use field-specific setters and modifiers with full type inference
 - **Composable Transforms**: Combine multiple operations using the `compose` function

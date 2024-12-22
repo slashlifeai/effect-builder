@@ -15,19 +15,12 @@ describe("Builder v0.2.0", () => {
   type User = typeof UserSchema.Type
 
   // Create a builder with defaults
-  const userBuilder = define(UserSchema, {
+  const User = define(UserSchema, {
     id: 0,
     name: "",
     age: 0,
-    roles: []
+    roles: [] as string[]
   })
-
-  // Extract reusable lenses
-  const User = {
-    name: (name: string) => userBuilder.field("name").set(name),
-    age: (age: number) => userBuilder.field("age").set(age),
-    roles: userBuilder.field("roles")
-  }
 
   // Custom transforms
   const withRole = (role: string) => User.roles.modify((roles) => [...roles, role])
@@ -40,7 +33,7 @@ describe("Builder v0.2.0", () => {
             User.name("John"),
             User.age(30)
           ),
-          userBuilder.build
+          User.build
         )
 
         expect(result).toEqual({
@@ -58,7 +51,7 @@ describe("Builder v0.2.0", () => {
             withRole("user"),
             withRole("admin")
           ),
-          userBuilder.build
+          User.build
         )
 
         expect(result).toEqual({
@@ -71,16 +64,16 @@ describe("Builder v0.2.0", () => {
 
     it("should get field values", () =>
       Effect.gen(function*() {
-        const state = yield* pipe(
+        const result = yield* pipe(
           compose(
             User.name("John"),
             User.age(30)
           ),
-          userBuilder.build
+          User.build
         )
 
-        expect(userBuilder.field("name").get(state)).toBe("John")
-        expect(userBuilder.field("age").get(state)).toBe(30)
+        expect(User.name.get(result)).toBe("John")
+        expect(User.age.get(result)).toBe(30)
       }))
 
     it("should modify field values", () =>
@@ -88,9 +81,9 @@ describe("Builder v0.2.0", () => {
         const result = yield* pipe(
           compose(
             User.name("John"),
-            userBuilder.field("age").modify((age) => age + 1)
+            User.age.modify((age) => age + 1)
           ),
-          userBuilder.build
+          User.build
         )
 
         expect(result.age).toBe(1)
@@ -105,7 +98,7 @@ describe("Builder v0.2.0", () => {
             User.name("John"),
             User.age(-1)
           ),
-          userBuilder.build,
+          User.build,
           Effect.either
         )
 
@@ -124,7 +117,7 @@ describe("Builder v0.2.0", () => {
           compose(
             User.name("John")
           ),
-          userBuilder.build
+          User.build
         )
 
         expect(result).toEqual({
