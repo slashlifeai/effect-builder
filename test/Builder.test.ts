@@ -17,7 +17,7 @@ describe("Builder v0.2.0", () => {
   const User = define(UserSchema, {
     id: 0,
     name: "",
-    age: 0,
+    age: 1,
     roles: [] as Array<string>
   })
 
@@ -56,7 +56,7 @@ describe("Builder v0.2.0", () => {
         expect(result).toEqual({
           id: 0,
           name: "",
-          age: 0,
+          age: 1,
           roles: ["user", "admin"]
         })
       }))
@@ -85,7 +85,7 @@ describe("Builder v0.2.0", () => {
           User.build
         )
 
-        expect(result.age).toBe(1)
+        expect(result.age).toBe(2)
       }))
   })
 
@@ -122,7 +122,7 @@ describe("Builder v0.2.0", () => {
         expect(result).toEqual({
           id: 0,
           name: "John",
-          age: 0,
+          age: 1,
           roles: []
         })
       }))
