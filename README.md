@@ -36,25 +36,29 @@ const UserSchema = Schema.Struct({
   roles: Schema.Array(Schema.String).annotations({ default: [] })
 })
 
+// Type is inferred from schema:
+// type User = {
+//   name: string
+//   age: number
+//   roles: string[]
+// }
 type User = typeof UserSchema.Type
 
 // Create a builder (defaults are optional as they can come from schema)
 const User = define(UserSchema)
 
 // Build a user with transformations
-const result = pipe(
-  compose(
-    // Your transformations here
-  ),
-  User.build
-)
+const result = Effect.gen(function* () {
+  return yield* pipe(compose(User.name("John")), User.build)
+}).pipe(Effect.runSync)
 
 // Handle the result
-if (Effect.isSuccess(result)) {
-  console.log("Created user:", result.value)
-} else {
-  console.error("Validation error:", result.cause)
-}
+console.log("Created user:", result)
+// {
+//   name: "John",
+//   age: 30,
+//   roles: ["admin"]
+// }
 ```
 
 ## Features
@@ -85,14 +89,54 @@ Provide defaults when creating the builder:
 
 ```typescript
 const User = define(UserSchema, {
-  name: "Anonymous",  // This overrides the schema default
+  name: "Anonymous", // This overrides the schema default
   roles: ["user"]
 })
 ```
 
 Builder defaults take precedence over schema defaults. This gives you flexibility to:
+
 - Define sensible defaults in your schema
 - Override them when needed in specific builder instances
+
+## Auto-Generated Lenses
+
+The builder automatically generates type-safe lenses for each field in your schema. These lenses provide a convenient way to access and modify fields while maintaining type safety and immutability.
+
+```typescript
+const UserSchema = Schema.Struct({
+  name: Schema.String,
+  age: Schema.Number,
+  roles: Schema.Array(Schema.String)
+})
+
+const User = define(UserSchema)
+
+// Simple field access
+User.name("John") // Set name to "John"
+User.age(25) // Set age to 25
+
+// Complex modifications using .modify
+User.roles.modify((roles) => [...roles, "admin"]) // Add "admin" role
+
+// Compose multiple transformations
+pipe(
+  compose(
+    User.name("John"),
+    User.age(25),
+    User.roles.modify((roles) => [...roles, "admin"])
+  ),
+  User.build
+)
+```
+
+Each lens follows the standard lens laws and provides type-safe operations:
+
+- Get the current value
+- Set a new value
+- Modify the existing value with a function
+
+Read more in the [specs/SPEC.md](./specs/SPEC.md)
 
 ## Installation
 

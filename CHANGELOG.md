@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+### Documentation
+
+- Improved README examples with better type inference documentation
+- Added runSync example for Effect handling
+- Enhanced lens pattern documentation
+
 ## 0.3.0
 
 ### Features
