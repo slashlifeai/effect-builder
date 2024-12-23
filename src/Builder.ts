@@ -41,7 +41,7 @@ export type Transform<A> = (a: Partial<A>) => Partial<A>
  * @since 0.3.0
  * @category models
  */
-export interface Builder<F extends Schema.Struct.Fields> {
+export interface BuilderOp<F extends Schema.Struct.Fields, R> {
   readonly schema: Schema.Struct<F>
   readonly Default: Partial<SchemaType<F>>
   readonly field: <K extends keyof SchemaType<F>>(key: K) => Lens<SchemaType<F>, SchemaType<F>[K]>
@@ -52,7 +52,7 @@ export interface Builder<F extends Schema.Struct.Fields> {
   ) => Transform<SchemaType<F>>
   readonly build: (
     transform: Transform<SchemaType<F>>
-  ) => Effect.Effect<SchemaType<F>, ValidationError>
+  ) => Effect.Effect<SchemaType<F>, ValidationError, R>
 }
 
 /**
@@ -66,6 +66,14 @@ export type BuilderLens<A> = {
     readonly modify: (f: (value: A[K]) => A[K]) => Transform<A>
   }
 }
+
+/**
+ * @since 0.3.0
+ * @category models
+ */
+export type Builder<F extends Schema.Struct.Fields, R> =
+  & BuilderOp<F, R>
+  & Omit<BuilderLens<SchemaType<F>>, keyof BuilderOp<F, R>>
 
 /**
  * Creates a lens for a specific field
@@ -105,18 +113,14 @@ const createBuilderLens = <A, K extends keyof A>(key: K): BuilderLens<A>[K] => {
  * @since 0.3.0
  * @category constructors
  */
-const createBuilderLenses = <A extends Schema.Struct.Fields>(schema: Schema.Struct<A>): BuilderLens<A> => {
-  return pipe(
+export const createBuilderLenses = <A>(schema: Schema.Struct<any>): BuilderLens<A> =>
+  pipe(
     Object.entries(schema.fields),
-    ReadonlyArray.reduce(
-      {} as BuilderLens<A>,
-      (acc: BuilderLens<A>, [key, _field]: [keyof A, any]) => ({
-        ...acc,
-        [key]: createBuilderLens<A, keyof A>(key)
-      })
-    )
+    ReadonlyArray.reduce({} as BuilderLens<A>, (acc, [key]) => ({
+      ...acc,
+      [key]: createBuilderLens<A, keyof A>(key as keyof A)
+    }))
   )
-}
 
 /**
  * Gets default values from schema annotations recursively
@@ -154,8 +158,8 @@ const getSchemaDefaults = <A, F extends Schema.Struct.Fields>(schema: Schema.Str
 export const define = <F extends Schema.Struct.Fields>(
   schema: Schema.Struct<F>,
   defaults?: Partial<SchemaType<F>>
-): Builder<F> & BuilderLens<SchemaType<F>> => {
-  const lenses = createBuilderLenses(schema)
+): Builder<F, Schema.Schema.Context<F[keyof F]>> => {
+  const lenses = createBuilderLenses<SchemaType<F>>(schema)
 
   // Get schema defaults first
   const schemaDefaults = getSchemaDefaults<SchemaType<F>, F>(schema)
@@ -166,8 +170,7 @@ export const define = <F extends Schema.Struct.Fields>(
     ...defaults // Start with builder defaults
   }
 
-  // @ts-ignore
-  return {
+  const builder: Builder<F, Schema.Schema.Context<F[keyof F]>> = {
     ...lenses,
     schema,
     Default: mergedDefaults,
@@ -181,6 +184,8 @@ export const define = <F extends Schema.Struct.Fields>(
         Effect.mapError((error) => new ValidationError({ message: `Schema validation failed: ${error}` }))
       )
   }
+
+  return builder
 }
 
 /**
