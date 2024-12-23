@@ -1,12 +1,11 @@
-import { describe, it } from "@effect/vitest"
-import { Effect, Either, Option, pipe, Schema } from "effect"
-import { expect } from "vitest"
-import { compose, define } from "../src/Builder.js"
+import { describe, expect, it } from "@effect/vitest"
+import { Effect, Either, pipe, Schema } from "effect"
+import { compose, define, ValidationError } from "../src/Builder.js"
 
-describe("Builder v0.2.0", () => {
+describe("Builder v0.3.0", () => {
   // Define a schema for testing
   const UserSchema = Schema.Struct({
-    id: Schema.Number,
+    id: Schema.Number.annotations({ default: 3 }),
     name: Schema.String,
     age: Schema.Number.pipe(Schema.positive(), Schema.int()),
     roles: Schema.Array(Schema.String)
@@ -15,33 +14,25 @@ describe("Builder v0.2.0", () => {
   type User = typeof UserSchema.Type
 
   // Create a builder with defaults
-  const userBuilder = define(UserSchema, {
+  const User = define(UserSchema, {
     id: 0,
     name: "",
-    age: 0,
-    roles: []
+    age: 1,
+    roles: [] as Array<string>
   })
 
-  // Extract reusable lenses
-  const User = {
-    name: (name: string) => userBuilder.field("name").set(name),
-    age: (age: number) => userBuilder.field("age").set(age),
-    roles: userBuilder.field("roles")
-  }
-
   // Custom transforms
-  const withRole = (role: string) => User.roles.modify((roles = []) => [...roles, role])
-  const withAge = (age: number) => User.age(age)
+  const withRole = (role: string) => User.roles.modify((roles) => [...roles, role])
 
   describe("Field Operations", () => {
-    it("should set field values", () =>
+    it.effect("should set field values", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
             User.name("John"),
             User.age(30)
           ),
-          userBuilder.build
+          User.build
         )
 
         expect(result).toEqual({
@@ -52,289 +43,172 @@ describe("Builder v0.2.0", () => {
         })
       }))
 
-    it("should modify field values", () =>
+    it.effect("should modify field values", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
             withRole("user"),
             withRole("admin")
           ),
-          userBuilder.build
+          User.build
         )
 
         expect(result).toEqual({
           id: 0,
           name: "",
-          age: 0,
+          age: 1,
           roles: ["user", "admin"]
         })
       }))
 
-    it("should get field values", () =>
-      Effect.gen(function*() {
-        const state = yield* pipe(
-          compose(
-            User.name("John"),
-            User.age(30)
-          )
-        )(userBuilder.Default)
-
-        expect(userBuilder.field("name").get(state)).toBe("John")
-        expect(userBuilder.field("age").get(state)).toBe(30)
-      }))
-
-    it("should modify field values", () =>
+    it.effect("should get field values", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
             User.name("John"),
-            userBuilder.field("age").modify((age) => (age ?? 0) + 1)
+            User.age(30)
           ),
-          userBuilder.build
+          User.build
         )
 
-        expect(result.age).toBe(1)
+        expect(User.name.get(result)).toBe("John")
+        expect(User.age.get(result)).toBe(30)
+      }))
+
+    it.effect("should modify field values", () =>
+      Effect.gen(function*() {
+        const result = yield* pipe(
+          compose(
+            User.name("John"),
+            User.age.modify((age) => age + 1)
+          ),
+          User.build
+        )
+
+        expect(result.age).toBe(2)
       }))
   })
 
   describe("Schema Validation", () => {
-    it("should validate required fields", () =>
+    it.effect("should validate required fields", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
-            User.name(""), // Empty name
-            User.age(30)
+            User.name("John"),
+            User.age(-1)
           ),
-          userBuilder.build,
+          User.build,
           Effect.either
         )
 
-        Either.mapLeft(result, (error) => {
-          const errorStr = String(error)
-          expect(errorStr).toMatch(/name/)
-          expect(errorStr).toMatch(/should not be empty/)
-        })
-      }))
-
-    it("should handle undefined fields", () =>
-      Effect.gen(function*() {
-        const result = yield* pipe(
-          compose(
-            User.name("John")
-            // age is undefined
-          ),
-          userBuilder.build,
-          Effect.either
+        expect(result).toEqual(
+          Either.left(
+            new ValidationError({ message: expect.stringContaining("Schema validation failed") })
+          )
         )
-
-        Either.mapLeft(result, (error) => {
-          const errorStr = String(error)
-          expect(errorStr).toMatch(/age/)
-          expect(errorStr).toMatch(/required/)
-        })
-      }))
-  })
-
-  describe("Validation", () => {
-    it.effect("should fail on invalid age", () =>
-      Effect.gen(function*() {
-        const program = pipe(
-          compose(
-            User.name("John"),
-            User.age(-1) // Invalid: age must be positive
-          ),
-          userBuilder.build
-        )
-
-        const result = yield* Effect.either(program)
-        Either.mapLeft(result, (error) => {
-          const errorStr = String(error)
-          expect(errorStr).toMatch(/Expected a positive number/)
-          expect(errorStr).toMatch(/actual -1/)
-          expect(errorStr).toMatch(/\["age"\]/)
-        })
-      }))
-  })
-
-  describe("Conditional Logic", () => {
-    it("should apply transforms conditionally", () =>
-      Effect.gen(function*() {
-        const result = yield* pipe(
-          compose(
-            User.name("John"),
-            withAge(20),
-            userBuilder.when(
-              (user) => user.age !== undefined && typeof user.age !== "undefined" && user.age >= 18,
-              withRole("adult"),
-              withRole("minor")
-            )
-          ),
-          userBuilder.build
-        )
-
-        expect(result.roles).toContain("adult")
-        expect(result.roles).not.toContain("minor")
-      }))
-
-    it("should handle falsy condition with default transform", () =>
-      Effect.gen(function*() {
-        const result = yield* pipe(
-          compose(
-            User.name("John"),
-            User.age(20),
-            userBuilder.when(
-              (user) => (user.age ?? 0) > 50,
-              withRole("senior")
-            )
-          ),
-          userBuilder.build
-        )
-
-        expect(result.roles).toEqual([])
-      }))
-
-    it("should handle custom else transform", () =>
-      Effect.gen(function*() {
-        const result = yield* pipe(
-          compose(
-            User.name("John"),
-            User.age(20),
-            userBuilder.when(
-              (user) => (user.age ?? 0) > 50,
-              withRole("senior"),
-              withRole("junior")
-            )
-          ),
-          userBuilder.build
-        )
-
-        expect(result.roles).toEqual(["junior"])
       }))
   })
 
   describe("Default Values", () => {
-    it("should use default values when fields are not set", () =>
+    it.effect("should use default values when fields are not set", () =>
       Effect.gen(function*() {
-        const result = yield* pipe(
-          compose(
-            User.name("John"),
-            User.age(30)
-          ),
-          userBuilder.build
-        )
-
-        expect(result.roles).toEqual([])
-      }))
-
-    it("should override default values", () =>
-      Effect.gen(function*() {
-        const customBuilder = define(UserSchema, {
-          id: 1,
-          name: "default",
-          age: 18,
-          roles: ["user"]
-        })
-
         const result = yield* pipe(
           compose(
             User.name("John")
           ),
-          customBuilder.build
+          User.build
         )
 
-        expect(result.id).toBe(1)
-        expect(result.name).toBe("John")
-        expect(result.age).toBe(18)
-        expect(result.roles).toEqual(["user"])
+        expect(result).toEqual({
+          id: 0,
+          name: "John",
+          age: 1,
+          roles: []
+        })
+      }))
+
+    it.effect("should work with and without defaults", () =>
+      Effect.gen(function*() {
+        // Builder with defaults
+        const UserWithDefaults = define(UserSchema, {
+          id: 1,
+          name: "default",
+          age: 25,
+          roles: ["user"]
+        })
+
+        // Builder without defaults
+        const UserWithoutDefaults = define(UserSchema)
+
+        const resultWithDefaults = yield* pipe(
+          compose(),
+          UserWithDefaults.build
+        )
+
+        const resultWithoutDefaults = yield* pipe(
+          compose(
+            UserWithoutDefaults.id(1),
+            UserWithoutDefaults.name("John"),
+            UserWithoutDefaults.age(30),
+            UserWithoutDefaults.roles(["admin"])
+          ),
+          UserWithoutDefaults.build
+        )
+
+        expect(resultWithDefaults).toEqual({
+          id: 1,
+          name: "default",
+          age: 25,
+          roles: ["user"]
+        })
+
+        expect(resultWithoutDefaults).toEqual({
+          id: 1,
+          name: "John",
+          age: 30,
+          roles: ["admin"]
+        })
       }))
   })
 
-  describe("Complex Schema Operations", () => {
-    const AddressSchema = Schema.Struct({
-      street: Schema.String,
-      city: Schema.String,
-      country: Schema.String
-    })
-
-    const ComplexUserSchema = Schema.Struct({
-      id: Schema.Number,
-      name: Schema.String,
-      age: Schema.Number.pipe(Schema.positive(), Schema.int()),
-      email: Schema.Option(Schema.String),
-      roles: Schema.Array(Schema.String),
-      address: Schema.Option(AddressSchema),
-      tags: Schema.Record({ key: Schema.String, value: Schema.Boolean })
-    })
-
-    const complexBuilder = define(ComplexUserSchema, {
-      id: 0,
-      name: "",
-      age: 18,
-      email: Option.none(),
-      roles: [],
-      address: Option.none(),
-      tags: {}
-    })
-
-    it("should handle optional fields", () =>
+  describe("Schema Defaults", () => {
+    it.effect("should respect field-level schema defaults", () =>
       Effect.gen(function*() {
+        const TestSchema = Schema.Struct({
+          id: Schema.Number.annotations({ default: 42 }),
+          name: Schema.String.annotations({ default: "default-name" }),
+          count: Schema.Number
+        })
+
+        const builder = define(TestSchema)
         const result = yield* pipe(
-          compose(
-            complexBuilder.field("email").set(Option.some("test@example.com")),
-            complexBuilder.field("address").set(Option.some({
-              street: "123 Main St",
-              city: "NY",
-              country: "USA"
-            }))
-          ),
-          complexBuilder.build
+          compose(builder.count(100)),
+          builder.build
         )
 
-        expect(result.email).toEqual(Option.some("test@example.com"))
-        expect(result.address).toEqual(Option.some({
-          street: "123 Main St",
-          city: "NY",
-          country: "USA"
-        }))
+        expect(result.id).toBe(42)
+        expect(result.name).toBe("default-name")
       }))
 
-    it("should handle record fields", () =>
+    it.effect("should override schema defaults with builder defaults", () =>
       Effect.gen(function*() {
+        const TestSchema = Schema.Struct({
+          id: Schema.Number.annotations({ default: 42 }),
+          name: Schema.String.annotations({ default: "schema-default" })
+        })
+
+        const builder = define(TestSchema, {
+          id: 100,
+          name: "builder-default"
+        })
+
         const result = yield* pipe(
-          compose(
-            complexBuilder.field("tags").set({
-              active: true,
-              verified: false
-            })
-          ),
-          complexBuilder.build
+          compose(),
+          builder.build
         )
 
-        expect(result.tags).toEqual({
-          active: true,
-          verified: false
-        })
-      }))
-
-    it("should validate nested structures", () =>
-      Effect.gen(function*() {
-        const result = yield* pipe(
-          compose(
-            complexBuilder.field("address").set(Option.some({
-              street: "", // Invalid: empty street
-              city: "NY",
-              country: "USA"
-            }))
-          ),
-          complexBuilder.build,
-          Effect.either
-        )
-
-        Either.mapLeft(result, (error) => {
-          const errorStr = String(error)
-          expect(errorStr).toMatch(/street/)
-          expect(errorStr).toMatch(/empty/)
-        })
+        expect(result.id).toBe(100)
+        expect(result.name).toBe("builder-default")
       }))
   })
 })
