@@ -1,5 +1,11 @@
-import { Data, Effect, pipe, Schema } from "effect"
+import { Data, Effect, Option, pipe, Schema, SchemaAST } from "effect"
 import * as ReadonlyArray from "effect/Array"
+
+/**
+ * @since 0.3.0
+ * @category models
+ */
+type SchemaType<F extends Schema.Struct.Fields> = Schema.Schema.Type<Schema.Struct<F>>
 
 /**
  * @since 0.3.0
@@ -35,16 +41,18 @@ export type Transform<A> = (a: Partial<A>) => Partial<A>
  * @since 0.3.0
  * @category models
  */
-export interface Builder<A, F extends Schema.Struct.Fields> {
+export interface Builder<F extends Schema.Struct.Fields> {
   readonly schema: Schema.Struct<F>
-  readonly Default: Partial<A>
-  readonly field: <K extends keyof A>(key: K) => Lens<A, A[K]>
+  readonly Default: Partial<SchemaType<F>>
+  readonly field: <K extends keyof SchemaType<F>>(key: K) => Lens<SchemaType<F>, SchemaType<F>[K]>
   readonly when: (
-    predicate: (a: Partial<A>) => boolean,
-    ifTrue: Transform<A>,
-    ifFalse?: Transform<A>
-  ) => Transform<A>
-  readonly build: (transform: Transform<A>) => Effect.Effect<A, ValidationError>
+    predicate: (a: Partial<SchemaType<F>>) => boolean,
+    ifTrue: Transform<SchemaType<F>>,
+    ifFalse?: Transform<SchemaType<F>>
+  ) => Transform<SchemaType<F>>
+  readonly build: (
+    transform: Transform<SchemaType<F>>
+  ) => Effect.Effect<SchemaType<F>, ValidationError>
 }
 
 /**
@@ -111,31 +119,66 @@ const createBuilderLenses = <A extends Schema.Struct.Fields>(schema: Schema.Stru
 }
 
 /**
+ * Gets default values from schema annotations recursively
+ *
+ * @since 0.3.0
+ * @category constructors
+ */
+const getSchemaDefaults = <A, F extends Schema.Struct.Fields>(schema: Schema.Struct<F>): Partial<A> => {
+  // Get defaults from fields first
+  const fieldDefaults = Object.entries(schema.fields).reduce((acc, [key, field]) => {
+    const fieldDefault = SchemaAST.getDefaultAnnotation(field.ast).pipe(
+      Option.getOrElse(() => undefined)
+    )
+    return fieldDefault ? { ...acc, [key]: fieldDefault } : acc
+  }, {})
+
+  // Get struct-level defaults
+  const structDefaults = SchemaAST.getDefaultAnnotation(schema.ast).pipe(
+    Option.getOrElse(() => ({}))
+  )
+
+  // Merge with struct defaults taking precedence
+  return {
+    ...(typeof fieldDefaults === "object" && fieldDefaults !== null ? fieldDefaults : {}),
+    ...(typeof structDefaults === "object" && structDefaults !== null ? structDefaults : {})
+  } as Partial<A>
+}
+
+/**
  * Creates a builder for constructing objects with runtime validation.
  *
  * @since 0.3.0
  * @category constructors
  */
-export const define = <A, F extends Schema.Struct.Fields>(
+export const define = <F extends Schema.Struct.Fields>(
   schema: Schema.Struct<F>,
-  defaults: Partial<A> = {} as Partial<A>
-): Builder<A, F> & BuilderLens<A> => {
+  defaults?: Partial<SchemaType<F>>
+): Builder<F> & BuilderLens<SchemaType<F>> => {
   const lenses = createBuilderLenses(schema)
-  // @ts-ignore no idea how to make this type check work
+
+  // Get schema defaults first
+  const schemaDefaults = getSchemaDefaults<SchemaType<F>, F>(schema)
+
+  // Merge defaults, prioritizing schema defaults over builder defaults
+  const mergedDefaults = {
+    ...schemaDefaults, // Override with schema defaults
+    ...defaults // Start with builder defaults
+  }
+
+  // @ts-ignore
   return {
     ...lenses,
     schema,
-    Default: defaults,
-    field: <K extends keyof A>(key: K) => createLens<A, K>(key),
-    when: (predicate, ifTrue, ifFalse = (a) => a) => (a: Partial<A>) => predicate(a) ? ifTrue(a) : ifFalse(a),
+    Default: mergedDefaults,
+    field: <K extends keyof SchemaType<F>>(key: K) => createLens<SchemaType<F>, K>(key),
+    when: (predicate, ifTrue, ifFalse = (a) => a) => (a: Partial<SchemaType<F>>) =>
+      predicate(a) ? ifTrue(a) : ifFalse(a),
     build: (transform) =>
       pipe(
-        transform(defaults),
-        (result) =>
-          pipe(
-            Schema.decodeUnknown(schema)(result),
-            Effect.mapError((error) => new ValidationError({ message: `Schema validation failed: ${error}` }))
-          )
+        transform(mergedDefaults),
+        Schema.decodeUnknown(schema),
+        Effect.mapError((error) => new ValidationError({ message: `Schema validation failed: ${error}` }))
       )
   }
 }
