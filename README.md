@@ -26,15 +26,15 @@ These specifications serve as the source of truth for both human developers and 
 ## Quick Start
 
 ```typescript
-import { Schema, Effect, pipe, Option } from "effect";
-import { compose, define } from "effect-builder";
+import { Schema, Effect, pipe, Option } from "effect"
+import { compose, define } from "effect-builder"
 
 // Define your schema
 const UserSchema = Schema.Struct({
   name: Schema.String,
   age: Schema.Number.pipe(Schema.positive(), Schema.int()),
   roles: Schema.Array(Schema.String)
-});
+})
 
 type User = typeof UserSchema.Type
 
@@ -43,15 +43,16 @@ const User = define(UserSchema, {
   name: "",
   age: 0,
   roles: [] as string[]
-});
+})
 
 // Use auto-generated lenses for field access
 const result = pipe(
   compose(
-    User.name("John"),        // Direct field setter
-    User.age(30),            // Type-safe field setter
-    User.roles.modify(       // Lens-based modification
-      roles => [...roles, "admin"]
+    User.name("John"), // Direct field setter
+    User.age(30), // Type-safe field setter
+    User.roles.modify(
+      // Lens-based modification
+      (roles) => [...roles, "admin"]
     )
   ),
   User.build
@@ -77,18 +78,19 @@ The library automatically generates type-safe lenses for each field in your sche
 - **Immutability**: All operations produce new objects without mutation
 
 Example of lens operations:
+
 ```typescript
 // Direct field setting
 User.name("John")
 
 // Lens-based modification
-User.roles.modify(roles => [...roles, "admin"])
+User.roles.modify((roles) => [...roles, "admin"])
 
 // Composition of multiple operations
 compose(
   User.name("John"),
   User.age(30),
-  User.roles.modify(roles => [...roles, "admin"])
+  User.roles.modify((roles) => [...roles, "admin"])
 )
 ```
 
@@ -111,8 +113,8 @@ npm install effect-builder
 ## Example Usage
 
 ```typescript
-import { Schema, Effect, pipe, Option } from "effect";
-import { compose, define } from "effect-builder";
+import { Schema, Effect, pipe, Option } from "effect"
+import { compose, define } from "effect-builder"
 
 // Define a complex schema
 const MessageSchema = Schema.Struct({
@@ -121,28 +123,30 @@ const MessageSchema = Schema.Struct({
   options: Schema.Option(
     Schema.Struct({
       color: Schema.Option(Schema.String),
-      size: Schema.Option(Schema.Number),
+      size: Schema.Option(Schema.Number)
     })
-  ),
-});
+  )
+})
 
 // Create a builder with defaults
 const messageBuilder = define(MessageSchema, {
   type: "text",
   content: "",
   options: Option.none()
-});
+})
 
 // Create reusable field operations
 const MessageOps = {
   setType: (type: "text" | "flex") => messageBuilder.field("type").set(type),
   setContent: (content: string) => messageBuilder.field("content").set(content),
-  setOptions: (options: { color?: string; size?: number }) => 
-    messageBuilder.field("options").set(Option.some({
-      color: Option.fromNullable(options.color),
-      size: Option.fromNullable(options.size)
-    }))
-};
+  setOptions: (options: { color?: string; size?: number }) =>
+    messageBuilder.field("options").set(
+      Option.some({
+        color: Option.fromNullable(options.color),
+        size: Option.fromNullable(options.size)
+      })
+    )
+}
 
 // Build with type-safe transformations
 const program = Effect.gen(function* () {
@@ -153,21 +157,21 @@ const program = Effect.gen(function* () {
       MessageOps.setOptions({ color: "blue", size: 16 }),
       messageBuilder.when(
         (msg) => msg.type === "flex",
-        MessageOps.setOptions({ color: "red" })  // Only applied for flex messages
+        MessageOps.setOptions({ color: "red" }) // Only applied for flex messages
       )
     ),
     messageBuilder.build
-  );
+  )
 
-  return message;
-});
+  return message
+})
 
 // Handle success and errors
 pipe(
   program,
   Effect.tapError((error) => Effect.log(`Error: ${error.message}`)),
   Effect.runPromise
-);
+)
 ```
 
 ## Development
@@ -186,6 +190,7 @@ pnpm build
 ## Documentation
 
 For detailed documentation and examples, see:
+
 - [Specification](./specs/SPEC.md)
 - [Changelog](./CHANGELOG.md)
 - [Coding Style](./specs/ai/CODINGSTYLE.AI.md)
