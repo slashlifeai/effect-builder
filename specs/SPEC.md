@@ -44,49 +44,25 @@ interface Builder<A> {
 
 The **Builder Factory** is responsible for creating builder instances from a defined schema.
 
-### 3. Lenses
+### 3. Schema Defaults
 
-**Lenses** are a powerful abstraction for accessing and modifying nested properties within complex objects.
+Schema defaults can be specified at two levels:
 
+1. Schema-Level Defaults:
 ```typescript
-interface Lens<S, A> {
-  get: (s: S) => A
-  set: {
-    (value: A, state: S): S
-    (value: A): (state: S) => S
-  }
-}
+const schema = Schema.Struct({
+  name: Schema.String.annotations({ default: "Guest" })
+})
 ```
 
-### 4. Composition
-
-The library provides a way to compose multiple operations together using the `compose` function.
-
+2. Builder-Level Defaults:
 ```typescript
-const user = pipe(
-  Builder.compose(
-    Builder.field("name").set("John Doe"),
-    Builder.field("age").set(30)
-  )
-)
+const builder = define(schema, {
+  name: "Anonymous" // Overrides schema default
+})
 ```
 
-### 5. Building and Validation
-
-The `Builder.build` function is responsible for constructing the final object and ensuring it meets the schema requirements.
-
-```typescript
-// Create a partial object through transformations
-const partialUser = pipe(
-  Builder.compose(
-    Builder.field("name").set("John Doe"),
-    Builder.field("age").set(30)
-  )
-)
-
-// Build and validate the final object
-const finalUser = Builder.build(UserSchema)(partialUser)
-```
+Builder defaults take precedence over schema defaults.
 
 ## Features
 

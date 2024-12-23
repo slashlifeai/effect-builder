@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0
+
+### Features
+
+- Enhanced schema defaults support:
+  - Field-level schema defaults using `Schema.annotations({ default: value })`
+  - Builder defaults take precedence over schema defaults
+  - Improved type safety for default values
+
+### Bug Fixes
+
+- Fixed spread operator type issue in `getSchemaDefaults` function
+- Removed unused SchemaAST import
+
 ## 0.2.0
 
 ### Breaking Changes
