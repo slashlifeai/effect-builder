@@ -1,6 +1,5 @@
-import { describe, it } from "@effect/vitest"
+import { describe, expect, it } from "@effect/vitest"
 import { Effect, Either, pipe, Schema } from "effect"
-import { expect } from "vitest"
 import { compose, define, ValidationError } from "../src/Builder.js"
 
 describe("Builder v0.2.0", () => {
@@ -19,14 +18,14 @@ describe("Builder v0.2.0", () => {
     id: 0,
     name: "",
     age: 0,
-    roles: [] as string[]
+    roles: [] as Array<string>
   })
 
   // Custom transforms
   const withRole = (role: string) => User.roles.modify((roles) => [...roles, role])
 
   describe("Field Operations", () => {
-    it("should set field values", () =>
+    it.effect("should set field values", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
@@ -44,7 +43,7 @@ describe("Builder v0.2.0", () => {
         })
       }))
 
-    it("should modify field values", () =>
+    it.effect("should modify field values", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
@@ -62,7 +61,7 @@ describe("Builder v0.2.0", () => {
         })
       }))
 
-    it("should get field values", () =>
+    it.effect("should get field values", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
@@ -76,7 +75,7 @@ describe("Builder v0.2.0", () => {
         expect(User.age.get(result)).toBe(30)
       }))
 
-    it("should modify field values", () =>
+    it.effect("should modify field values", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
@@ -91,7 +90,7 @@ describe("Builder v0.2.0", () => {
   })
 
   describe("Schema Validation", () => {
-    it("should validate required fields", () =>
+    it.effect("should validate required fields", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
@@ -111,7 +110,7 @@ describe("Builder v0.2.0", () => {
   })
 
   describe("Default Values", () => {
-    it("should use default values when fields are not set", () =>
+    it.effect("should use default values when fields are not set", () =>
       Effect.gen(function*() {
         const result = yield* pipe(
           compose(
