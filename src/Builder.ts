@@ -158,8 +158,24 @@ const getSchemaDefaults = <A, F extends Schema.Struct.Fields>(schema: Schema.Str
 /**
  * Creates a builder for constructing objects with runtime validation.
  *
- * @since 0.3.0
+ * @since 0.1.0
  * @category constructors
+ * @example
+ * import { Schema, Effect, pipe } from "effect"
+ * import { define, compose } from "effect-builder/Builder"
+ *
+ * const UserSchema = Schema.Struct({
+ *   name: Schema.String,
+ * })
+ *
+ * const User = define(UserSchema)
+ *
+ * const result = Effect.gen(function* () {
+ *   return yield* pipe(compose(User.name("John")), User.build)
+ * }).pipe(Effect.runSync)
+ *
+ * console.log("Created user:", result)
+ * // {
  */
 export const define = <F extends Schema.Struct.Fields>(
   schema: Schema.Struct<F>,
@@ -195,8 +211,37 @@ export const define = <F extends Schema.Struct.Fields>(
 }
 
 /**
- * @since 0.3.0
+ * @since 0.1.0
  * @category combinators
+ * @example
+ * import { Schema, Effect, pipe } from "effect"
+ * import { define, compose } from "effect-builder/Builder"
+ *
+ * const UserSchema = Schema.Struct({
+ *   name: Schema.String,
+ *   age: Schema.Number,
+ *   roles: Schema.Array(Schema.String).annotations({ default: ["user"] })
+ * })
+ *
+ * const User = define(UserSchema)
+ *
+ * const result = Effect.gen(function* () {
+ *   return yield* pipe(
+ *      compose(
+ *        User.name("John"),
+ *        User.age(25),
+ *        User.roles.modify((roles) => [...roles, "admin"])
+ *      ),
+ *      User.build
+ *  )
+ * }).pipe(Effect.runSync)
+ *
+ * console.log("Created user:", result)
+ * // {
+ * //   name: "John",
+ * //   age: 25,
+ * //   roles: ["admin"]
+ * // }
  */
 export const compose = <A>(...transforms: Array<Transform<A>>): Transform<A> => (a: Partial<A>) =>
   transforms.reduce(
