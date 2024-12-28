@@ -138,6 +138,12 @@ Each lens follows the standard lens laws and provides type-safe operations:
 
 Read more in the [specs/SPEC.md](./specs/SPEC.md)
 
+## Documentation
+
+For detailed documentation on how to use Effect Builder, please refer to the following resources:
+- [Getting Started](./docs/GettingStarted.md): A comprehensive guide to help you set up Effect Builder and start using it effectively.
+- [API Documentation](https://slashlifeai.github.io/effect-builder): Detailed information about the API, including available functions, types, and examples of usage.
+
 ## Installation
 
 ```bash
