@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.2
+
+### Changed
+
+- More examples for the documentation.
+- Updated default values setting methods in the documentation.
+- Improved the structure and clarity of the Getting Started guide.
+
+### Fixed
+
+- Fixed errors in the documentation examples for better clarity.
+
 ## 0.3.1
 
 ### Documentation
@@ -52,10 +64,7 @@ console.log(User.Default) // { name: "", age: 0 }
 
 // Using pipe for composition
 const user = pipe(
-  compose(
-    User.field("name").set("John"),
-    User.field("age").set(30)
-  ),
+  compose(User.field("name").set("John"), User.field("age").set(30)),
   User.build
 )
 ```
