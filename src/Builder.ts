@@ -1,3 +1,9 @@
+/**
+ * This module provides a type-safe, immutable builder pattern implementation
+ * using Effect.
+ *
+ * @since 0.1.0
+ */
 import { Data, Effect, Option, pipe, Schema, SchemaAST } from "effect"
 import * as ReadonlyArray from "effect/Array"
 

@@ -5,6 +5,10 @@
   "packageManager": "pnpm@9.10.0",
   "license": "MIT",
   "description": "A type-safe, immutable builder pattern implementation using Effect. It enables developers to construct complex objects with runtime validation while maintaining compile-time type safety.",
+  "homepage": "https://github.com/slashlifeai/effect-builder",
+  "bugs": {
+    "url": "https://github.com/slashlifeai/effect-builder/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/slashlifeai/effect-builder.git"
@@ -22,6 +26,7 @@
     "check": "tsc -b tsconfig.json",
     "lint": "eslint \"**/{src,test,examples,scripts,dtslint}/**/*.{ts,mjs}\"",
     "lint-fix": "pnpm lint --fix",
+    "docgen": "docgen",
     "test": "vitest",
     "coverage": "vitest --coverage",
     "changeset-version": "changeset version && node scripts/version.mjs",
@@ -38,6 +43,7 @@
     "@changesets/changelog-github": "^0.5.0",
     "@changesets/cli": "^2.27.10",
     "@effect/build-utils": "^0.7.8",
+    "@effect/docgen": "^0.5.1",
     "@effect/eslint-plugin": "^0.2.0",
     "@effect/language-service": "^0.2.0",
     "@effect/vitest": "^0.14.7",
